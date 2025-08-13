@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weather Now</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111a2b;
+      --muted: #7b8aa0;
+      --text: #e6eefb;
+      --accent: #5fb3ff;
+      --danger: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1000px 500px at 10% 0%, #0e1830 0%, var(--bg) 60%);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .app {
+      width: 100%;
+      max-width: 720px;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+    header {
+      padding: 20px;
+      display: grid;
+      gap: 12px;
+      background: linear-gradient(160deg, rgba(95,179,255,0.15), rgba(95,179,255,0.05));
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .search {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: #0f1726;
+      color: var(--text);
+      outline: none;
+      transition: border 0.2s ease;
+    }
+    input[type="text"]::placeholder { color: #9fb0c9; }
+    input[type="text"]:focus { border-color: var(--accent); }
+    button {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: #0f1726;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.05s ease, background 0.2s ease, border 0.2s ease;
+    }
+    button:hover { background: #14213a; }
+    button:active { transform: translateY(1px); }
+    .btn-accent { border-color: rgba(95,179,255,0.5); box-shadow: inset 0 0 0 1px rgba(95,179,255,0.2); }
+    .btn-ghost { opacity: 0.9; }
+
+    main { padding: 20px; }
+    .status { font-size: 14px; color: var(--muted); min-height: 21px; }
+
+    .result {
+      margin-top: 16px;
+      display: none;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+
+    .panel {
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      background: var(--card);
+    }
+    .city {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      font-size: 16px; color: var(--muted);
+    }
+    .city strong { color: var(--text); font-size: 18px; }
+    .temp {
+      display: flex; align-items: center; gap: 16px; margin-top: 10px;
+    }
+    .temp .value { font-size: 52px; font-weight: 800; letter-spacing: -1px; }
+    .temp .cond { font-size: 16px; color: var(--muted); }
+    .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .stat {
+      background: #0f1726; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 12px;
+      display: grid; gap: 4px; font-size: 14px;
+    }
+    .stat .label { color: var(--muted); font-size: 12px; }
+
+    .error { color: var(--danger); margin-top: 8px; font-size: 14px; }
+    .hidden { display: none !important; }
+    .unit-toggle { font-size: 13px; color: var(--muted); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="app card">
+    <header>
+      <div class="title">🌤️ Weather Now</div>
+      <div class="search">
+        <input id="q" type="text" placeholder="Search city (e.g., London, Delhi, 37.77,-122.42)" />
+        <button id="searchBtn" class="btn-accent">Search</button>
+        <button id="geoBtn" class="btn-ghost" title="Use my location">📍</button>
+      </div>
+      <div class="status" id="status"></div>
+    </header>
+    <main>
+      <div id="error" class="error hidden"></div>
+
+      <section id="result" class="result">
+        <div class="panel">
+          <div class="city">
+            <div>
+              <div><strong id="locName">—</strong></div>
+              <div id="locMeta">—</div>
+            </div>
+            <div class="unit-toggle" id="unitToggle">Switch °C/°F</div>
+          </div>
+          <div class="temp">
+            <img id="icon" alt="" width="72" height="72" />
+            <div>
+              <div class="value"><span id="temp">—</span>°<span id="unit">C</span></div>
+              <div class="cond" id="cond">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="panel">
+            <div class="grid2">
+              <div class="stat"><div class="label">Feels Like</div><div><span id="feels">—</span>°<span class="unitLike">C</span></div></div>
+              <div class="stat"><div class="label">Humidity</div><div><span id="humidity">—</span>%</div></div>
+              <div class="stat"><div class="label">Wind</div><div><span id="wind">—</span> km/h</div></div>
+              <div class="stat"><div class="label">Last Updated</div><div id="updated">—</div></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="grid2">
+              <div class="stat"><div class="label">AQI PM2.5</div><div id="pm25">—</div></div>
+              <div class="stat"><div class="label">AQI PM10</div><div id="pm10">—</div></div>
+              <div class="stat"><div class="label">O₃ (µg/m³)</div><div id="o3">—</div></div>
+              <div class="stat"><div class="label">NO₂ (µg/m³)</div><div id="no2">—</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const API_BASE = 'https://api.weatherapi.com/v1/current.json';
+    const API_KEY = '20829628109d47b5b7b170722251308';
+
+    const $ = (sel) => document.querySelector(sel);
+    const statusEl = $('#status');
+    const errorEl = $('#error');
+    const resultEl = $('#result');
+
+    const ui = {
+      locName: $('#locName'),
+      locMeta: $('#locMeta'),
+      icon: $('#icon'),
+      temp: $('#temp'),
+      unit: $('#unit'),
+      unitToggle: $('#unitToggle'),
+      feels: $('#feels'),
+      unitLike: document.querySelectorAll('.unitLike'),
+      humidity: $('#humidity'),
+      wind: $('#wind'),
+      updated: $('#updated'),
+      cond: $('#cond'),
+      pm25: $('#pm25'),
+      pm10: $('#pm10'),
+      o3: $('#o3'),
+      no2: $('#no2')
+    };
+
+    let useCelsius = true;
+
+    function setLoading(isLoading, msg = '') {
+      statusEl.textContent = isLoading ? (msg || 'Fetching weather…') : '';
+    }
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.remove('hidden');
+    }
+
+    function clearError() {
+      errorEl.classList.add('hidden');
+      errorEl.textContent = '';
+    }
+
+    async function fetchWeather(q) {
+      if (!q || !q.trim()) {
+        showError('Type a city, place, or lat,long.');
+        return;
+      }
+      clearError();
+      setLoading(true, `Looking up "${q}"…`);
+      try {
+        const url = `${API_BASE}?key=${encodeURIComponent(API_KEY)}&q=${encodeURIComponent(q.trim())}&aqi=yes`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`API error (${res.status}): ${text.slice(0,120)}`);
+        }
+        const data = await res.json();
+        renderWeather(data);
+      } catch (err) {
+        console.error(err);
+        showError('Could not fetch weather. Check the city name or try again later.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function renderWeather(data) {
+      resultEl.style.display = 'grid';
+      const { location, current } = data;
+
+      ui.locName.textContent = `${location.name || ''}`;
+      const metaBits = [location.region, location.country].filter(Boolean).join(', ');
+      ui.locMeta.textContent = `${metaBits} • Local time: ${location.localtime || '—'}`;
+
+      ui.icon.src = `https:${current.condition.icon}`;
+      ui.icon.alt = current.condition.text || 'weather icon';
+      ui.cond.textContent = current.condition.text || '—';
+
+      updateUnits(current);
+
+      ui.humidity.textContent = current.humidity ?? '—';
+      ui.wind.textContent = (current.wind_kph ?? '—');
+      ui.updated.textContent = current.last_updated || '—';
+
+      const aq = current.air_quality || {};
+      ui.pm25.textContent = aq.pm2_5?.toFixed ? aq.pm2_5.toFixed(1) : (aq.pm2_5 ?? '—');
+      ui.pm10.textContent = aq.pm10?.toFixed ? aq.pm10.toFixed(1) : (aq.pm10 ?? '—');
+      ui.o3.textContent   = aq.o3?.toFixed   ? aq.o3.toFixed(1)   : (aq.o3   ?? '—');
+      ui.no2.textContent  = aq.no2?.toFixed  ? aq.no2.toFixed(1)  : (aq.no2  ?? '—');
+    }
+
+    function updateUnits(current) {
+      if (useCelsius) {
+        ui.temp.textContent = current.temp_c ?? '—';
+        ui.unit.textContent = 'C';
+        ui.feels.textContent = current.feelslike_c ?? '—';
+        ui.unitLike.forEach(el => el.textContent = 'C');
+      } else {
+        ui.temp.textContent = current.temp_f ?? '—';
+        ui.unit.textContent = 'F';
+        ui.feels.textContent = current.feelslike_f ?? '—';
+        ui.unitLike.forEach(el => el.textContent = 'F');
+      }
+    }
+
+    $('#searchBtn').addEventListener('click', () => fetchWeather($('#q').value));
+    $('#q').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') fetchWeather($('#q').value);
+    });
+
+    ui.unitToggle.addEventListener('click', () => {
+      useCelsius = !useCelsius;
+      const last = window.__lastWeatherData;
+      if (last) updateUnits(last.current);
+    });
+
+    const origRender = renderWeather;
+    renderWeather = function(data) {
+      window.__lastWeatherData = data;
+      origRender(data);
+    };
+
+    $('#geoBtn').addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        showError('Geolocation not supported in this browser.');
+        return;
+      }
+      clearError();
+      setLoading(true, 'Getting your location…');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const q = `${pos.coords.latitude.toFixed(4)},${pos.coords.longitude.toFixed(4)}`;
+          $('#q').value = q;
+          fetchWeather(q);
+        },
+        (err) => {
+          setLoading(false);
+          showError('Permission denied or unavailable. Type your city instead.');
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+      );
+    });
+
+    $('#q').value = 'London';
+    fetchWeather('London');
+  </script>
+</body>
+</html>
+
+     
